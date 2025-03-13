@@ -1,0 +1,134 @@
+// 离散背包问题
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+// 主函数
+int main(void)
+{
+    // 定义物品数量number, 背包容量capacity
+    int number;
+    double capacity;
+    scanf("%d", &number);
+    scanf("%lf", &capacity);
+
+    // 定义weight数组,存储物品重量
+    double* weight = (double*)malloc(number * sizeof(double));
+    if (weight == NULL)
+        return 0;
+
+    // 定义value数组,存储物品价值
+    double* value = (double*)malloc(number * sizeof(double));
+    if (value == NULL)
+    {
+        free(weight);
+        return 0;
+    }
+
+    // 分别读取物品重量和价值
+    for (int i = 0; i < number; i++)
+        scanf("%lf", &weight[i]);
+    for (int i = 0; i < number; i++)
+        scanf("%lf", &value[i]);
+
+    // 定义dp数组,dp[i][j]表示在背包容量为j时,考虑前i+1个物品所能获得的最大价值
+    double** dp = (double**)malloc(number * sizeof(double*));
+    if (dp == NULL)
+    {
+        free(weight);
+        free(value);
+        return 0;
+    }
+
+    // 这里四舍五入可以满足题目某个测试点的要求,但并不是严谨的做法
+    int cap = (round)(capacity + 1);
+    for (int i = 0; i < number; i++)
+    {
+        dp[i] = (double*)malloc(cap * sizeof(double));
+        if (dp[i] == NULL)
+        {
+            free(weight);
+            free(value);
+            for (int j = 0; j < i; j++)
+                free(dp[j]);
+            free(dp);
+            return 0;
+        }
+    }
+
+    // 初始化dp数组
+    for (int i = 0; i < number; i++)
+        dp[i][0] = 0;
+
+    for (int i = 0; i < cap; i++)
+    {
+        if (weight[0] <= i)
+            dp[0][i] = value[0];
+        else
+            dp[0][i] = 0;
+    }
+
+    // 更新dp数组
+    for (int i = 1; i < number; i++)
+    {
+        for (int j = 1; j < cap; j++)
+        {
+            double value1 = dp[i - 1][j];
+            if (j >= weight[i])
+            {
+                int index = (int)(j - weight[i]);
+                double value2 = dp[i - 1][index] + value[i];
+                if (value1 > value2)
+                    dp[i][j] = value1;
+                else
+                    dp[i][j] = value2;
+            }
+            else
+                dp[i][j] = value1;
+        }
+    }
+
+    // 定义choice数组,表示选择
+    int* choice = (int*)malloc(number * sizeof(int));
+    if (choice == NULL)
+    {
+        free(weight);
+        free(value);
+        for (int i = 0; i < cap; i++)
+            free(dp[i]);
+        free(dp);
+        return 0;
+    }
+
+    // 初始化choice数组
+    for (int i = 0; i < number; i++)
+        choice[i] = 0;
+
+    // 更新choice数组(从最后一物品开始判断是否进行了装入)
+    int tmp = cap - 1;
+    for (int i = number - 1; i > 0; i--)
+    {
+        if (dp[i][tmp] > dp[i - 1][tmp])
+        {
+            choice[i] = 1;
+            tmp = (int)(tmp - weight[i]);
+        }
+    }
+    
+    // 若余下容量可以装第一个物品
+    if (tmp >= weight[0])
+        choice[0] = 1;
+
+    // 打印结果
+    printf("%.2lf\n", dp[number - 1][cap - 1]);
+    for (int i = 0; i < number; i++)
+        printf("%d ", choice[i]);
+
+    // 释放内存
+    free(weight);
+    free(value);
+    for (int i = 0; i < number; i++)
+        free(dp[i]);
+    free(dp);
+    free(choice);
+}

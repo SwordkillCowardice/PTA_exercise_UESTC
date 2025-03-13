@@ -1,0 +1,163 @@
+// 计算矩阵连乘问题最优解
+#include <stdio.h>
+#include <stdlib.h>
+
+// 定义一个大数
+#define MAX 99999999
+
+// 定义递归打印函数
+void re_print(int start, int end, int** pos);
+
+// 主函数
+int main(void)
+{
+    // 读取矩阵个数count
+    int count;
+    scanf("%d", &count);
+
+    // 处理特殊情况
+    if (count == 1)
+    {
+        printf("M1\n");
+        printf("0");
+        return 0;
+    }
+    
+    // 分配数组rows,存储各个矩阵的行
+    int* rows = (int*)malloc((count + 1) * sizeof(int));
+    if (rows == NULL)
+        return 0;
+
+    // 读取行
+    for (int i = 0; i < count + 1; i++)
+        scanf("%d", &rows[i]);
+
+    // 定义dp数组,存储最优解
+    int** dp = (int**)malloc(count * sizeof(int*));
+    if (dp == NULL)
+    {
+        free(rows);
+        return 0;
+    }
+
+    for (int i = 0; i < count; i++)
+    {
+        dp[i] = (int*)malloc(count * sizeof(int));
+        if (dp[i] == NULL)
+        {
+            free(rows);
+            for (int j = 0; j < i; j++)
+                free(dp[j]);
+            free(dp);
+            return 0;
+        }
+    }
+
+    // 初始化dp数组
+    for (int i = 0; i < count; i++)
+    {
+        for (int j = 0; j < count; j++)
+        {
+            if (i >= j)
+                dp[i][j] = 0;
+            else if (j == i + 1)
+                dp[i][j] = rows[i] * rows[j] * rows[j + 1];
+            else
+                dp[i][j] = MAX;
+        }
+    }
+
+    // 定义pos[i][j],存储最佳断链位置
+    int** pos = (int**)malloc(count * sizeof(int*));
+    if (pos == NULL)
+    {
+        free(rows);
+        for (int i = 0; i < count; i++)
+            free(dp[i]);
+        free(dp);
+        return 0;
+    }
+
+    for (int i = 0; i < count; i++)
+    {
+        pos[i] = (int*)malloc(count * sizeof(int));
+        if (pos[i] == NULL)
+        {
+            free(rows);
+            for (int i = 0; i < count; i++)
+                free(dp[i]);
+            free(dp);
+            for (int j = 0; j < i; j++)
+                free(pos[j]);
+            free(pos);
+            return 0;
+        }
+    }
+
+    // 初始化pos数组
+    for (int i = 0; i < count; i++)
+    {
+        for (int j = 0; j < count; j++)
+        {
+            if (i == j || j == i + 1)
+                pos[i][j] = i;
+            else
+                pos[i][j] = -1;
+        }
+    }
+
+    // 更新dp数组与pos数组,求出最优解
+    // 注意逆序从下往上遍历,否则无法满足更新逻辑
+    for (int i = count - 1; i >= 0; i--)
+    {
+        for (int j = i + 1; j < count; j++)
+        {
+            for (int k = i; k < j; k++)
+            {
+                int sum = dp[i][k] + dp[k + 1][j] + rows[i] * rows[k + 1] * rows[j + 1];
+                if (sum < dp[i][j])
+                {
+                    dp[i][j] = sum;
+                    pos[i][j] = k;
+                }
+            }
+        }
+    }
+
+    // 打印结果
+    re_print(0, count - 1, pos);
+    printf("\n");
+    printf("%d", dp[0][count - 1]);
+    
+    // 释放内存
+    free(rows);
+    for (int i = 0; i < count; i++)
+        free(dp[i]);
+    free(dp);
+    for (int i = 0; i < count; i++)
+        free(pos[i]);
+    free(pos);
+}
+
+// 递归打印
+void re_print(int start, int end, int** pos)
+{
+    if (start == end)
+    {
+        printf("M%d", start + 1);
+        return;
+    }
+    
+    else
+    {
+        // 分别打印左子问题和右子问题
+        printf("(");
+        re_print(start, pos[start][end], pos);
+        printf(")");
+        printf("x");
+        printf("(");
+        re_print(pos[start][end] + 1, end, pos);
+        printf(")");
+        return;
+    }
+}
